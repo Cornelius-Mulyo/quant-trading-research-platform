@@ -221,4 +221,14 @@ plt.title("Efficient Frontier")
 
 plt.grid(True)
 
+plt.tight_layout()
+
+plt.savefig(
+    "efficient-frontier.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
+plt.show()
+
 plt.show()
