@@ -4,118 +4,93 @@ from sqlalchemy import create_engine
 
 from src.strategies.momentum import MomentumStrategy
 
-# Database connection
 engine = create_engine(
     "postgresql://postgres:QuantProject2026!@localhost:5432/quant_platform"
 )
 
-# Portfolio stocks
-tickers = [
-    "AAPL",
-    "MSFT",
-    "NVDA",
-    "GOOGL",
-    "AMZN"
-]
 
-portfolio_returns = []
+def run_portfolio_backtest():
 
-for ticker in tickers:
+    tickers = [
+        "AAPL",
+        "MSFT",
+        "NVDA",
+        "GOOGL",
+        "AMZN"
+    ]
 
-    query = f"""
-    SELECT *
-    FROM stock_prices
-    WHERE ticker='{ticker}'
-    ORDER BY date
-    """
+    portfolio_returns = []
 
-    df = pd.read_sql(query, engine)
+    for ticker in tickers:
 
-    # Generate signals
-    strategy = MomentumStrategy(window=50)
+        query = f"""
+        SELECT *
+        FROM stock_prices
+        WHERE ticker='{ticker}'
+        ORDER BY date
+        """
 
-    df = strategy.generate_signals(df)
+        df = pd.read_sql(query, engine)
 
-    # Daily returns
-    df["returns"] = df["close"].pct_change()
+        strategy = MomentumStrategy(window=50)
 
-    # Strategy returns
-    df["strategy_returns"] = (
-        df["signal"].shift(1)
-        * df["returns"]
+        df = strategy.generate_signals(df)
+
+        df["returns"] = df["close"].pct_change()
+
+        df["strategy_returns"] = (
+            df["signal"].shift(1)
+            * df["returns"]
+        )
+
+        portfolio_returns.append(df["strategy_returns"])
+
+    portfolio = pd.concat(
+        portfolio_returns,
+        axis=1
     )
 
-    portfolio_returns.append(
-        df["strategy_returns"]
+    portfolio["portfolio_return"] = portfolio.mean(axis=1)
+
+    equity_curve = (
+        1 + portfolio["portfolio_return"]
+    ).cumprod()
+
+    total_return = equity_curve.iloc[-1] - 1
+
+    years = len(portfolio) / 252
+
+    cagr = (
+        equity_curve.iloc[-1]
+        ** (1 / years)
+    ) - 1
+
+    volatility = (
+        portfolio["portfolio_return"].std()
+        * (252 ** 0.5)
     )
 
-# Combine all stock returns
-portfolio = pd.concat(
-    portfolio_returns,
-    axis=1
-)
+    sharpe = cagr / volatility
 
-# Equal-weight portfolio
-portfolio["portfolio_return"] = (
-    portfolio.mean(axis=1)
-)
+    running_max = equity_curve.cummax()
 
-# Equity curve
-equity_curve = (
-    1 + portfolio["portfolio_return"]
-).cumprod()
+    drawdown = (
+        equity_curve - running_max
+    ) / running_max
 
-# ======================
-# Portfolio Statistics
-# ======================
+    max_drawdown = drawdown.min()
 
-total_return = equity_curve.iloc[-1] - 1
+    return {
+        "portfolio_return": round(total_return * 100, 2),
+        "cagr": round(cagr * 100, 2),
+        "volatility": round(volatility * 100, 2),
+        "sharpe": round(sharpe, 2),
+        "max_drawdown": round(max_drawdown * 100, 2),
+        "final_equity": round(equity_curve.iloc[-1], 4)
+    }
 
-years = len(portfolio) / 252
 
-cagr = (
-    equity_curve.iloc[-1]
-    ** (1 / years)
-) - 1
+if __name__ == "__main__":
+    results = run_portfolio_backtest()
 
-volatility = (
-    portfolio["portfolio_return"].std()
-    * (252 ** 0.5)
-)
-
-sharpe = cagr / volatility
-
-running_max = equity_curve.cummax()
-
-drawdown = (
-    equity_curve - running_max
-) / running_max
-
-max_drawdown = drawdown.min()
-
-# ======================
-# Results
-# ======================
-
-print("\n===== PORTFOLIO RESULTS =====")
-
-print(f"Portfolio Return: {total_return:.2%}")
-print(f"Portfolio CAGR: {cagr:.2%}")
-print(f"Portfolio Volatility: {volatility:.2%}")
-print(f"Portfolio Sharpe: {sharpe:.2f}")
-print(f"Portfolio Max Drawdown: {max_drawdown:.2%}")
-
-print("\nFinal Equity Value:")
-print(f"{equity_curve.iloc[-1]:.4f}")
-
-# ======================
-# Plot
-# ======================
-
-equity_curve.plot()
-
-plt.title("Equal Weight Momentum Portfolio")
-plt.xlabel("Trading Days")
-plt.ylabel("Portfolio Value")
-
-plt.show()
+    print(results)
