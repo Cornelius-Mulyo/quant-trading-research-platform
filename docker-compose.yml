@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    container_name: quant-postgres
+    restart: always
+
+    environment:
+      POSTGRES_DB: quant_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: QuantProject2026!
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: quant-api
+
+    depends_on:
+      - db
+
+    environment:
+      POSTGRES_DB: quant_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: QuantProject2026!
+
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
