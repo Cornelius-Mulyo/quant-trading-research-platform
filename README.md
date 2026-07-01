@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-REST_API-green)
 ![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
-![Pytest](https://img.shields.io/badge/Tested-Pytest-success)
+![CI](https://github.com/Cornelius-Mulyo/quant-trading-research-platform/actions/workflows/ci.yml/badge.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-blue)
 
 A production-style quantitative portfolio research platform for developing, backtesting, optimizing, and serving systematic trading strategies using historical market data.
@@ -400,22 +400,3 @@ quant_trading_research_platform/
 ├── requirements.txt
 └── README.md
 ```
-
----
-
-# Future Enhancements
-
-Planned improvements include:
-
-- JWT Authentication
-- OAuth integration
-- Redis caching
-- Celery background task processing
-- Transaction cost modeling
-- Position sizing framework
-- Risk parity portfolios
-- Interactive Streamlit dashboard
-- Machine learning trading signals
-
----
-
